@@ -11,7 +11,7 @@ import OpenAI from 'openai';
 //#region App Setup
 const app = express();
 dotenv.config({ path: './.env' });
-const BASE_URL = process.env.BASE_URL || 'https://live-url.com';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:5000';
 
 const SWAGGER_OPTIONS = {
   swaggerDefinition: {
@@ -28,12 +28,7 @@ const SWAGGER_OPTIONS = {
     },
     servers: [
       {
-        url: 'http://localhost:5000',
-        description: 'Development Environment',
-      },
-      {
         url: BASE_URL,
-        description: 'Staging Environment',
       },
     ],
     tags: [
