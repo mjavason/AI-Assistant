@@ -11,6 +11,7 @@ import OpenAI from 'openai';
 //#region App Setup
 const app = express();
 dotenv.config({ path: './.env' });
+const BASE_URL = process.env.BASE_URL || 'https://live-url.com'
 
 const SWAGGER_OPTIONS = {
   swaggerDefinition: {
@@ -31,7 +32,7 @@ const SWAGGER_OPTIONS = {
         description: 'Development Environment',
       },
       {
-        url: 'https://ai-assistant-vfo2.onrender.com',
+        url: BASE_URL,
         description: 'Staging Environment',
       },
     ],
