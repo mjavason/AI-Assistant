@@ -52,7 +52,7 @@ app.use(morgan('dev'));
 //#endregion
 
 //#region Keys and Configs
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 const OPEN_AI_KEY = process.env.OPEN_AI_KEY || 'xxxx';
 const baseURL = 'https://httpbin.org';
 // const openAIConfig = new Configuration({ apiKey: OPEN_AI_KEY });
