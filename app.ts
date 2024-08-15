@@ -244,7 +244,7 @@ app.post('/prompt-bot', async (req: Request, res: Response) => {
 // Function to ping the server itself
 async function pingSelf() {
   try {
-    const { data } = await axios.get(`http://localhost:5000`);
+    const { data } = await axios.get(BASE_URL);
     console.log(`Server pinged successfully: ${data.message}`);
     return true;
   } catch (e: any) {
