@@ -31,7 +31,7 @@ const SWAGGER_OPTIONS = {
         description: 'Development Environment',
       },
       {
-        url: 'https://live.onrender.com/api/v1',
+        url: 'https://ai-assistant-vfo2.onrender.com',
         description: 'Staging Environment',
       },
     ],
@@ -225,6 +225,6 @@ app.listen(PORT, async () => {
 });
 
 // (for render services) Keep the API awake by pinging it periodically
-// setInterval(pingSelf, 600000);
+setInterval(pingSelf, 600000);
 
 //#endregion
