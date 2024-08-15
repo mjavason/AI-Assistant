@@ -11,7 +11,7 @@ import OpenAI from 'openai';
 //#region App Setup
 const app = express();
 dotenv.config({ path: './.env' });
-const BASE_URL = process.env.BASE_URL || 'https://live-url.com'
+const BASE_URL = process.env.BASE_URL || 'https://live-url.com';
 
 const SWAGGER_OPTIONS = {
   swaggerDefinition: {
@@ -62,15 +62,19 @@ const OPEN_AI_KEY = process.env.OPEN_AI_KEY || 'xxxx';
 const baseURL = 'https://httpbin.org';
 // const openAIConfig = new Configuration({ apiKey: OPEN_AI_KEY });
 const openAI = new OpenAI({ apiKey: OPEN_AI_KEY });
-const AIRules: string[] = [
-  'You are a helpful assistant.',
-  'Always summarize your replies to a maximum of 30 words.',
-  'Do not repeat the questions when providing answers. for example, instead of replying to "what is the capital of france" with "the capital of france is paris", just say "Paris".',
-  'Refuse any questions that go outside the scope of countries and capitals by returning "#E-OS".',
+const AIRules = [
+  'Be helpful.',
+  'Summarize in 30 words max.',
+  'Avoid repeating the question; give direct answers.',
+  // 'Limit scope to countries/capitals; reply just "#E-OS" otherwise.',
 ];
+
 //#endregion
 
 //#region Code here
+
+//#region Functions
+
 async function generateResponse(userContent: string) {
   const completion = await openAI.chat.completions.create({
     model: 'gpt-4o-mini',
@@ -84,17 +88,104 @@ async function generateResponse(userContent: string) {
         content: userContent,
       },
     ],
+    tools: [
+      {
+        function: {
+          name: 'convertToUpperCase',
+          description: 'Converts the user content to uppercase.',
+          parameters: {
+            type: 'object',
+            properties: {
+              content: {
+                type: 'string',
+                description: 'The content to convert to uppercase.',
+              },
+            },
+            required: ['content'],
+          },
+        },
+        type: 'function',
+      },
+      {
+        function: {
+          name: 'reverseString',
+          description: 'Reverses the string.',
+          parameters: {
+            type: 'object',
+            properties: {
+              content: {
+                type: 'string',
+                description: 'The content to reverse.',
+              },
+            },
+            required: ['content'],
+          },
+        },
+        type: 'function',
+      },
+      {
+        function: {
+          name: 'replaceSpacesWithDashes',
+          description: 'Replaces spaces with dashes in the string.',
+          parameters: {
+            type: 'object',
+            properties: {
+              content: {
+                type: 'string',
+                description: 'The content to modify.',
+              },
+            },
+            required: ['content'],
+          },
+        },
+        type: 'function',
+      },
+    ],
   });
 
   return completion.choices[0].message;
 }
+
+function convertToUpperCase(content: string) {
+  console.log('Converting to uppercase...');
+  return 'Uppercase: ' + content.toUpperCase();
+}
+
+function reverseString(content: string) {
+  console.log('Reversing the string...');
+  return 'Reverse: ' + content.split('').reverse().join('');
+}
+
+function replaceSpacesWithDashes(content: string) {
+  console.log('Replacing spaces with dashes...');
+  return 'Dashed: ' + content.replace(/\s+/g, '-');
+}
+
+function callChosenFunction(funcName: string, funcArguments: string) {
+  const funcArgumentsParsed = JSON.parse(funcArguments);
+
+  switch (funcName) {
+    case 'convertToUpperCase':
+      return convertToUpperCase(funcArgumentsParsed.content);
+    case 'reverseString':
+      return reverseString(funcArgumentsParsed.content);
+    case 'replaceSpacesWithDashes':
+      return replaceSpacesWithDashes(funcArgumentsParsed.content);
+    default:
+      return 'Unable to perform task';
+  }
+}
+
+//#endregion Functions
+
+//#region Routes
 
 /**
  * @swagger
  * /prompt-bot:
  *   post:
  *     summary: Prompt an OpenAI bot
- *     description: Returns an object containing the bot's response to a provided question.
+ *     description: Returns an object containing the bot's response to a provided question. The bot also performs three in-house functions, just ask the bot(Uppercase, Dash and Reverse)
  *     tags: [OpenAI]
  *     requestBody:
  *       required: true
@@ -117,23 +208,36 @@ app.post('/prompt-bot', async (req: Request, res: Response) => {
   const userContent = req.body.question as string;
 
   if (userContent.split(' ').length > 30)
-    return res
-      .status(400)
-      .send({
-        success: false,
-        message: 'Prompt was too long. Must be less than 31 words.',
-      });
+    return res.status(400).send({
+      success: false,
+      message: 'Prompt was too long. Must be less than 31 words.',
+    });
 
   const data = await generateResponse(userContent); //#endregion
   if (data.content === '#E-OS')
     data.content = 'Sorry but that is outside my scope, how else can i help?';
 
+  if (!data.content && data.tool_calls) {
+    data.content = '';
+
+    for (let i = 0; i < data.tool_calls.length; i++) {
+      data.content += `${callChosenFunction(
+        data.tool_calls[i].function.name,
+        data.tool_calls[i].function.arguments
+      )}\n`;
+    }
+  }
+
   return res.send({
     success: true,
     message: 'Bot responded successfully',
-    data,
+    data: data.content,
   });
 });
+
+//#endregion Routes
+
+//#endregion Code here
 
 //#region Server Setup
 
